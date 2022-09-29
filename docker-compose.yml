@@ -1,0 +1,63 @@
+version: '3.3'
+
+services:
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.4.2
+    container_name: elasticsearch
+    # healthcheck:
+    #   interval: 180s
+    #   timeout: 10s
+    #   retries: 3
+    #   test: "/elasticsearch_health_check_loader/healthcheck-runner.sh"
+    volumes:
+      - esdata:/usr/share/elasticsearch/data:rw
+      - ./yamls/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml
+      # - /elasticsearch_health_check_loader:/elasticsearch_health_check_loader:ro
+    ports:
+      - 9200:9200
+    networks:
+      - elastic
+  
+  logstash:
+    image: docker.elastic.co/logstash/logstash:8.4.2
+    container_name: logstash
+    # healthcheck:
+    #   interval: 180s
+    #   timeout: 10s
+    #   retries: 3
+    #   test: "/logstash_health_check_loader/healthcheck-runner.sh"
+    volumes:
+      - ./logstash-confs/logstash-1.conf:/usr/share/logstash/pipeline/logstash-1.conf:ro
+      # - ./logstash_health_check_loader:/logstash_health_check_loader:ro
+    ports:
+      - 5044:5044
+    networks:
+      - elastic
+    depends_on: 
+      - "elasticsearch"
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.4.2
+    container_name: kibana
+    # healthcheck:
+    #   interval: 180s
+    #   timeout: 10s
+    #   retries: 3
+    #   test: "/kibana_health_check_loader/healthcheck-runner.sh"
+    volumes:
+      - ./yamls/kibana.yml:/usr/share/kibana/config/kibana.yml:ro
+    #   - ./kibana_health_check_loader:/kibana_health_check_loader:ro
+    ports:
+      - 5601:5601
+    networks:
+      - elastic
+    depends_on:
+      - "elasticsearch"
+
+volumes:
+  esdata:
+    driver: local
+
+networks:
+  elastic:
+    driver: bridge
